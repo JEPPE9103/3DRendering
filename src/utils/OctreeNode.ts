@@ -12,80 +12,56 @@ export type Point = {
 
 // Data structure passed to OctreeNode constructor.
 // It may contain points, children (as nested data or URLs), and a bounding box.
-export type OctreeData = {
-  points?: Point[];
-  children?: string[] | OctreeData[];
-  boundingBox?: THREE.Box3;
-};
+export interface OctreeData {
+  points: any[];
+  boundingBox: THREE.Box3;
+  lodLevels?: THREE.Points[];
+  currentLOD?: number;
+  children?: OctreeNode[];
+}
 
 // This class represents a node in the Octree.
 // Each node contains a set of points and optionally child nodes.
 export class OctreeNode {
-  public points: Point[];                 // All 3D points stored in this node
+  public points: any[];                 // All 3D points stored in this node
   public children: OctreeNode[];          // Recursively defined children (other OctreeNodes)
   public boundingBox: THREE.Box3;         // Axis-aligned bounding box for all points in this node
+  public lodLevels?: THREE.Points[];
+  public currentLOD: number;
 
   constructor(data: OctreeData) {
-    // Load all point data into this node
-    this.points = data.points || [];
-
-    // Initialize children
-    this.children = [];
-
-    // If this node has children, determine if they are URLs (external) or inlined data
-    if (data.children) {
-      if (typeof data.children[0] === 'string') {
-        // Children are URLs — this happens in lazy-loaded Octrees (used for streaming or disk-based loading)
-        this.children = []; // Will be handled by loader later
-      } else {
-        // Children are embedded OctreeData — recursively instantiate child nodes
-        this.children = (data.children as OctreeData[]).map((child) => new OctreeNode(child));
-      }
-    }
-
-    // Compute a bounding box for all points in this node (used for LOD and spatial partitioning)
-    this.boundingBox = this.computeBoundingBox();
+    this.points = data.points;
+    this.children = data.children || [];
+    this.boundingBox = data.boundingBox;
+    this.lodLevels = data.lodLevels;
+    this.currentLOD = data.currentLOD || 0;
   }
 
   // Computes the bounding box that encloses all points in this node
-  private computeBoundingBox(): THREE.Box3 {
+  computeBoundingBox(): THREE.Box3 {
     const box = new THREE.Box3();
-
-    // Convert each point to a THREE.Vector3 for bounding box computation
-    const vectors = this.points.map(
-      (p) => new THREE.Vector3(p.x, p.y, p.z)
-    );
-
-    // Automatically compute min/max bounds from point positions
-    box.setFromPoints(vectors);
+    this.points.forEach(point => {
+      box.expandByPoint(new THREE.Vector3(point.x, point.z, point.y));
+    });
     return box;
   }
 
-  // Converts this node’s point data into a THREE.BufferGeometry for rendering in Three.js
+  // Converts this node's point data into a THREE.BufferGeometry for rendering in Three.js
   public toPointsGeometry(): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const normals: number[] = [];
 
-    const positions: number[] = []; // Flat array for storing XYZ positions
-    const colors: number[] = [];    // Flat array for storing RGB colors
+    this.points.forEach(point => {
+      positions.push(point.x, point.z, point.y);
+      colors.push(point.r / 255, point.g / 255, point.b / 255);
+      normals.push(0, 1, 0);
+    });
 
-    for (const p of this.points) {
-      // Note: we swap Y and Z to match our world orientation (common in LiDAR / mapping applications)
-      positions.push(p.x, p.z, p.y);
-
-      // Normalize color values to [0,1] for WebGL
-      colors.push(p.r / 255, p.g / 255, p.b / 255);
-    }
-
-    // Assign positions and colors as buffer attributes
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(positions, 3)
-    );
-
-    geometry.setAttribute(
-      "color",
-      new THREE.Float32BufferAttribute(colors, 3)
-    );
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
 
     return geometry;
   }

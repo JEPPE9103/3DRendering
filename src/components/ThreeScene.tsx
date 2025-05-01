@@ -98,7 +98,17 @@ function FPSCounter() {
   });
 
   return (
-    <Html position={[0, 0, 0]} style={{ color: 'white', fontSize: '16px', padding: '10px' }}>
+    <Html position={[10, 5, 0]} style={{ 
+      color: 'white', 
+      fontSize: '14px', 
+      padding: '5px',
+      background: 'rgba(0, 0, 0, 0.5)',
+      borderRadius: '4px',
+      position: 'absolute',
+      top: '10px',
+      right: '10px',
+      zIndex: 1000
+    }}>
       <div className="performance-info">
         FPS: {fps}
       </div>
@@ -118,7 +128,7 @@ export default function ThreeScene() {
   const [cameraTarget, setCameraTarget] = useState(new THREE.Vector3(0, 0, 0));
 
   const [qualitySettings, setQualitySettings] = useState<QualitySettings>({
-    pointDensity: 1.0,
+    pointDensity: 2.0,
     loadDistance: 1.0,
     updateFrequency: 1.0,
   });
@@ -128,7 +138,7 @@ export default function ThreeScene() {
     ssaoRadius: 0.2,
     ssaoIntensity: 1.0,
     bloom: true,
-    bloomIntensity: 0.3,
+    bloomIntensity: 0.7,
     fxaa: true
   });
 
@@ -203,7 +213,26 @@ export default function ThreeScene() {
           antialias: true,
           powerPreference: "high-performance",
           stencil: false,
-          depth: true
+          depth: true,
+          alpha: false,
+          preserveDrawingBuffer: true,
+          precision: "highp"
+        }}
+        camera={{
+          fov: 60,
+          near: 0.1,
+          far: 1000,
+          position: [10, 5, 10]
+        }}
+        performance={{
+          min: 0.5
+        }}
+        frameloop="always"
+        shadows={false}
+        onCreated={({ gl, scene, camera }) => {
+          console.log("Canvas created, scene:", scene);
+          console.log("Camera position:", camera.position);
+          console.log("Scene children:", scene.children);
         }}
       >
         <Stats />
@@ -222,13 +251,18 @@ export default function ThreeScene() {
           onProgress={setLoadingProgress}
           qualitySettings={qualitySettings}
           splatStyle={splatStyle}
+          onFinishLoading={() => {
+            console.log("OctreeRenderer finished loading");
+            const scene = useThree().scene;
+            console.log("Scene children after loading:", scene.children);
+          }}
         />
 
-        <EffectComposer multisampling={2}>
+        <EffectComposer multisampling={0}>
           <>
             {postProcessing.ssao && (
               <SSAO
-                samples={16}
+                samples={8}
                 radius={postProcessing.ssaoRadius}
                 intensity={postProcessing.ssaoIntensity}
                 luminanceInfluence={0.0}
