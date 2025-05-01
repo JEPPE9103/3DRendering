@@ -108,18 +108,32 @@ export default function OctreeRenderer({
           geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
           geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
 
-          const mat = createSplatMaterial(pointSize, 0, splatStyle);
-          const points = new THREE.Points(geometry, mat);
-          groupRef.current.add(points);
-          nodeData.points = points;
+          const mat = new THREE.PointsMaterial({
+            size: pointSize,
+            vertexColors: true,
+            sizeAttenuation: true
+          });
+          
+          const pointsObj = new THREE.Points(geometry, mat);
+          pointsObj.frustumCulled = false;
+          
+          // Add points to the scene
+          groupRef.current.add(pointsObj);
+          console.log(`Added points object to scene:`, pointsObj);
 
-          let fade = 0;
-          const fadeIn = () => {
-            fade = Math.min(fade + 0.05, 1);
-            mat.uniforms.fade.value = fade;
-            if (fade < 1) requestAnimationFrame(fadeIn);
-          };
-          fadeIn();
+          const bbox = new THREE.Box3().setFromPoints(
+            nodeData.node.points.map((p: any) => new THREE.Vector3(p.x, p.z, p.y))
+          );
+          
+          const node = new OctreeNode({ 
+            points: nodeData.node.points, 
+            boundingBox: bbox,
+            currentLOD: 0,
+            children: []
+          });
+          
+          spatialIndexRef.current?.addNode(node, pointsObj);
+          console.log(`Added node with ${nodeData.node.points.length} points to spatial index`);
 
           nodeData.lastUpdate = now;
         }
@@ -224,8 +238,14 @@ export default function OctreeRenderer({
           geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
           geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
 
-          const mat = createSplatMaterial(pointSize, 0, splatStyle);
+          const mat = new THREE.PointsMaterial({
+            size: pointSize,
+            vertexColors: true,
+            sizeAttenuation: true
+          });
+          
           const pointsObj = new THREE.Points(geometry, mat);
+          pointsObj.frustumCulled = false;
           
           // Add points to the scene
           groupRef.current.add(pointsObj);
@@ -236,9 +256,10 @@ export default function OctreeRenderer({
           );
           
           const node = new OctreeNode({ 
-            points, 
+            points: points, 
             boundingBox: bbox,
-            currentLOD: 0
+            currentLOD: 0,
+            children: []
           });
           
           spatialIndexRef.current?.addNode(node, pointsObj);
@@ -286,7 +307,8 @@ export default function OctreeRenderer({
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
       }
-      spatialIndexRef.current?.getNodes().forEach((node) => {
+      const nodes = spatialIndexRef.current?.getNodes() || [];
+      nodes.forEach((node) => {
         if (node.points) {
           node.points.geometry.dispose();
           groupRef.current.remove(node.points);

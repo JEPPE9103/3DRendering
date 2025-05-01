@@ -11,6 +11,8 @@ interface SpatialNode {
   distance: number;                // Distance to camera (used for sorting, LOD)
   lastUpdate: number;              // Timestamp of last LOD update
   pointsToShow: number;            // How many points should be shown (LOD-controlled)
+  lodLevels?: THREE.Points[];      // LOD levels for this node
+  currentLOD: number;              // Current LOD level
 }
 
 // An Octree class that spatially partitions OctreeNodes using bounding boxes
@@ -163,6 +165,8 @@ export class SpatialIndex {
       distance: 0,
       lastUpdate: 0,
       pointsToShow: node.points.length,
+      lodLevels: [],
+      currentLOD: 0,
     });
 
     this.octree.insert(node);
