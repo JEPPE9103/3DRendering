@@ -1,26 +1,21 @@
 import { useEffect, useRef, forwardRef } from 'react';
-import { useThree, useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 export interface FirstPersonControlsProps {
   moveSpeed?: number;
   lookSpeed?: number;
-  position?: [number, number, number];
   onLock?: () => void;
   onUnlock?: () => void;
-  isSpacePressed?: boolean;
 }
 
 const FirstPersonControls = forwardRef<any, FirstPersonControlsProps>(({ 
   moveSpeed = 0.1,
   lookSpeed = 0.5,
-  position = [10, 5, 10],
   onLock,
-  onUnlock,
-  isSpacePressed = false
+  onUnlock
 }, ref) => {
-  const { camera } = useThree();
   const moveForward = useRef(false);
   const moveBackward = useRef(false);
   const moveLeft = useRef(false);

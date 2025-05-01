@@ -120,21 +120,15 @@ class Octree {
 export class SpatialIndex {
   private nodes: SpatialNode[] = [];
   private octree: Octree;
-  private updateThreshold: number;
-  private lodDistance: number;
   private minPoints: number;
   private maxPoints: number;
   private updateInterval: number;
 
   constructor(
-    updateThreshold = 5,     // How much the camera must move before LOD updates
-    lodDistance = 100,       // Maximum distance to consider full detail
     minPoints = 1000,        // Minimum number of points to show
     maxPoints = 100000,      // Maximum number of points to show
     updateInterval = 1000    // Time (ms) between LOD checks
   ) {
-    this.updateThreshold = updateThreshold;
-    this.lodDistance = lodDistance;
     this.minPoints = minPoints;
     this.maxPoints = maxPoints;
     this.updateInterval = updateInterval;
@@ -144,14 +138,10 @@ export class SpatialIndex {
 
   // Update LOD parameters on-the-fly
   public updateSettings(
-    updateThreshold: number,
-    lodDistance: number,
     minPoints: number,
     maxPoints: number,
     updateInterval: number
   ): void {
-    this.updateThreshold = updateThreshold;
-    this.lodDistance = lodDistance;
     this.minPoints = minPoints;
     this.maxPoints = maxPoints;
     this.updateInterval = updateInterval;

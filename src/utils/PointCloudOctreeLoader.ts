@@ -1,6 +1,6 @@
 // src/utils/PointCloudOctreeLoader.ts
 import * as THREE from 'three';
-import { OctreeNode, Point } from './OctreeNode';
+import { OctreeNode } from './OctreeNode';
 
 export async function loadOctreeFromUrl(
   url: string,

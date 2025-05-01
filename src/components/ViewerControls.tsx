@@ -1,5 +1,3 @@
-import React from 'react';
-
 export interface QualitySettings {
   pointDensity: number;
   loadDistance: number;
@@ -23,7 +21,6 @@ export type FormatOption = 'json';
 
 interface ViewerControlsProps {
   onPointSizeChange: (size: number) => void;
-  onColorModeChange: (mode: 'rgb' | 'height') => void;
   onQualityChange: (settings: QualitySettings) => void;
   onSplatStyleChange: (style: SplatStyle) => void;
   navigationMode: 'orbit' | 'firstPerson';

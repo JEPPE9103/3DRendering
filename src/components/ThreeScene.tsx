@@ -78,8 +78,6 @@ function CameraController({
       ref={controlsRef}
       moveSpeed={0.1}
       lookSpeed={0.002}
-      position={[camera.position.x, camera.position.y, camera.position.z]}
-      isSpacePressed={isSpacePressed}
     />
   );
 }
@@ -87,7 +85,6 @@ function CameraController({
 export default function ThreeScene() {
   const [splatStyle, setSplatStyle] = useState<SplatStyle>('solidFancy');
   const [pointSize, setPointSize] = useState(0.05);
-  const [colorMode, setColorMode] = useState<'rgb' | 'height'>('rgb');
   const [navigationMode, setNavigationMode] = useState<'orbit' | 'firstPerson'>('orbit');
   const [format, setFormat] = useState<FormatOption>('json');
   const [loading, setLoading] = useState(true);
@@ -164,7 +161,6 @@ export default function ThreeScene() {
 
       <ViewerControls
         onPointSizeChange={setPointSize}
-        onColorModeChange={setColorMode}
         onQualityChange={setQualitySettings}
         navigationMode={navigationMode}
         onNavigationModeChange={setNavigationMode}
@@ -191,7 +187,6 @@ export default function ThreeScene() {
         <OctreeRenderer
           url={datasetUrl}
           pointSize={pointSize}
-          colorMode={colorMode}
           onProgress={setLoadingProgress}
           qualitySettings={qualitySettings}
           splatStyle={splatStyle}
