@@ -82,6 +82,28 @@ function CameraController({
   );
 }
 
+function FPSCounter() {
+  const [fps, setFps] = useState(0);
+  const frameCount = useRef(0);
+  const lastTime = useRef(performance.now());
+
+  useFrame(() => {
+    frameCount.current++;
+    const currentTime = performance.now();
+    if (currentTime - lastTime.current >= 1000) {
+      setFps(Math.round((frameCount.current * 1000) / (currentTime - lastTime.current)));
+      frameCount.current = 0;
+      lastTime.current = currentTime;
+    }
+  });
+
+  return (
+    <div className="performance-info">
+      FPS: {fps}
+    </div>
+  );
+}
+
 export default function ThreeScene() {
   const [splatStyle, setSplatStyle] = useState<SplatStyle>('solidFancy');
   const [pointSize, setPointSize] = useState(0.05);
@@ -106,20 +128,6 @@ export default function ThreeScene() {
     bloom: true,
     bloomIntensity: 0.3,
     fxaa: true
-  });
-
-  const [fps, setFps] = useState(0);
-  const frameCount = useRef(0);
-  const lastTime = useRef(performance.now());
-
-  useFrame(() => {
-    frameCount.current++;
-    const currentTime = performance.now();
-    if (currentTime - lastTime.current >= 1000) {
-      setFps(Math.round((frameCount.current * 1000) / (currentTime - lastTime.current)));
-      frameCount.current = 0;
-      lastTime.current = currentTime;
-    }
   });
 
   const handleCameraUpdate = useCallback((pos: THREE.Vector3, target: THREE.Vector3) => {
@@ -172,10 +180,6 @@ export default function ThreeScene() {
           </div>
         </div>
       )}
-
-      <div className="performance-info">
-        FPS: {fps}
-      </div>
 
       <ViewerControls
         onPointSizeChange={setPointSize}
@@ -239,6 +243,8 @@ export default function ThreeScene() {
             {postProcessing.fxaa && <FXAA />}
           </>
         </EffectComposer>
+
+        <FPSCounter />
       </Canvas>
 
       <div className="navigation-hint">
