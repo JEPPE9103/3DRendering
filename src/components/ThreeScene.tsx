@@ -1,5 +1,5 @@
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stats } from '@react-three/drei';
+import { OrbitControls, Stats, Html } from '@react-three/drei';
 import { EffectComposer, SSAO, Bloom, FXAA } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -98,9 +98,11 @@ function FPSCounter() {
   });
 
   return (
-    <div className="performance-info">
-      FPS: {fps}
-    </div>
+    <Html position={[0, 0, 0]} style={{ color: 'white', fontSize: '16px', padding: '10px' }}>
+      <div className="performance-info">
+        FPS: {fps}
+      </div>
+    </Html>
   );
 }
 
