@@ -31,10 +31,13 @@ export default function OctreeRenderer({
   const [isLoaded, setIsLoaded] = useState(false);
   const loadingRef = useRef(false);
 
-  const MIN_POINTS = Math.floor(1000 * qualitySettings.pointDensity);
-  const MAX_POINTS = Math.floor(500000 * qualitySettings.pointDensity);
-  const UPDATE_INTERVAL = Math.floor(500 / qualitySettings.updateFrequency);
-  const updateThreshold = useRef(0.2);
+  const MIN_POINTS = Math.floor(500 * qualitySettings.pointDensity);
+  const MAX_POINTS = Math.floor(250000 * qualitySettings.pointDensity);
+  const UPDATE_INTERVAL = Math.floor(1000 / qualitySettings.updateFrequency);
+  const updateThreshold = useRef(0.5);
+
+  const [loadedLevels, setLoadedLevels] = useState(0);
+  const totalLevels = useRef(0);
 
   useEffect(() => {
     if (spatialIndexRef.current) {
@@ -131,18 +134,35 @@ export default function OctreeRenderer({
       UPDATE_INTERVAL
     );
 
-    const loadJsonNode = async (nodeUrl: string) => {
+    const loadJsonNode = async (nodeUrl: string, level: number = 0) => {
       try {
         const response = await fetch(nodeUrl);
         if (!response.ok) throw new Error(`Failed to load ${nodeUrl}: ${response.statusText}`);
         const data = await response.json();
 
+        if (level === 0) {
+          totalLevels.current = Math.max(totalLevels.current, level + 1);
+        }
+
         if (data.children) {
-          await Promise.all(
-            data.children.map((child: string) =>
-              loadJsonNode(`${nodeUrl.substring(0, nodeUrl.lastIndexOf("/") + 1)}${child}`)
-            )
-          );
+          if (level === 0) {
+            await Promise.all(
+              data.children.map((child: string) =>
+                loadJsonNode(`${nodeUrl.substring(0, nodeUrl.lastIndexOf("/") + 1)}${child}`, level + 1)
+              )
+            );
+            setLoadedLevels(1);
+          } else {
+            setTimeout(() => {
+              Promise.all(
+                data.children.map((child: string) =>
+                  loadJsonNode(`${nodeUrl.substring(0, nodeUrl.lastIndexOf("/") + 1)}${child}`, level + 1)
+                )
+              ).then(() => {
+                setLoadedLevels(prev => Math.max(prev, level + 1));
+              });
+            }, 1000 * level);
+          }
         } else if (data.points) {
           const points = data.points;
           const geometry = new THREE.BufferGeometry();
@@ -150,7 +170,9 @@ export default function OctreeRenderer({
           const colors: number[] = [];
           const normals: number[] = [];
 
-          for (const p of points) {
+          const step = level === 0 ? 1 : Math.max(1, Math.floor(points.length / 10000));
+          for (let i = 0; i < points.length; i += step) {
+            const p = points[i];
             positions.push(p.x, p.z, p.y);
             colors.push(p.r / 255, p.g / 255, p.b / 255);
             normals.push(0, 1, 0);
@@ -178,7 +200,7 @@ export default function OctreeRenderer({
           spatialIndexRef.current?.addNode(new OctreeNode({ points, boundingBox: bbox }), pointsObj);
         }
 
-        onProgress?.(100);
+        onProgress?.(Math.min(100, (loadedLevels / totalLevels.current) * 100));
       } catch (err) {
         console.error("Failed to load octree:", err);
       }

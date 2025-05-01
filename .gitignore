@@ -10,11 +10,6 @@
 /build
 /dist
 
-# Ignore point cloud files
-public/*.txt
-public/defect-data/*.json
-
-
 # Misc
 .DS_Store
 .env
@@ -58,9 +53,4 @@ yarn-error.log*
 .netlify
 
 # Vite
-*.local
-
-# Data files
-/public/output_octree/
-/public/point_clouds/
-/public/output_binary/ 
+*.local 

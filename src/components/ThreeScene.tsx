@@ -100,12 +100,26 @@ export default function ThreeScene() {
   });
 
   const [postProcessing, setPostProcessing] = useState<PostProcessingSettings>({
-    ssao: true,
-    ssaoRadius: 0.15,
-    ssaoIntensity: 10,
+    ssao: false,
+    ssaoRadius: 0.2,
+    ssaoIntensity: 1.0,
     bloom: true,
     bloomIntensity: 0.3,
-    fxaa: true,
+    fxaa: true
+  });
+
+  const [fps, setFps] = useState(0);
+  const frameCount = useRef(0);
+  const lastTime = useRef(performance.now());
+
+  useFrame(() => {
+    frameCount.current++;
+    const currentTime = performance.now();
+    if (currentTime - lastTime.current >= 1000) {
+      setFps(Math.round((frameCount.current * 1000) / (currentTime - lastTime.current)));
+      frameCount.current = 0;
+      lastTime.current = currentTime;
+    }
   });
 
   const handleCameraUpdate = useCallback((pos: THREE.Vector3, target: THREE.Vector3) => {
@@ -159,6 +173,10 @@ export default function ThreeScene() {
         </div>
       )}
 
+      <div className="performance-info">
+        FPS: {fps}
+      </div>
+
       <ViewerControls
         onPointSizeChange={setPointSize}
         onQualityChange={setQualitySettings}
@@ -173,7 +191,15 @@ export default function ThreeScene() {
         onPostProcessingChange={setPostProcessing}
       />
 
-      <Canvas camera={{ position: [10, 5, 10], near: 0.1, far: 10000, fov: 60 }}>
+      <Canvas
+        dpr={[1, 2]}
+        gl={{
+          antialias: true,
+          powerPreference: "high-performance",
+          stencil: false,
+          depth: true
+        }}
+      >
         <Stats />
         <ambientLight intensity={0.3} />
         <CameraUpdater onCameraUpdate={handleCameraUpdate} />
@@ -192,11 +218,11 @@ export default function ThreeScene() {
           splatStyle={splatStyle}
         />
 
-        <EffectComposer multisampling={4}>
+        <EffectComposer multisampling={2}>
           <>
             {postProcessing.ssao && (
               <SSAO
-                samples={31}
+                samples={16}
                 radius={postProcessing.ssaoRadius}
                 intensity={postProcessing.ssaoIntensity}
                 luminanceInfluence={0.0}
@@ -206,7 +232,7 @@ export default function ThreeScene() {
             {postProcessing.bloom && (
               <Bloom
                 intensity={postProcessing.bloomIntensity}
-                luminanceThreshold={0.75}
+                luminanceThreshold={0.9}
                 luminanceSmoothing={0.1}
               />
             )}

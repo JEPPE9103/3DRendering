@@ -195,7 +195,20 @@ export class SpatialIndex {
     // Get visible nodes in frustum
     const nodesInFrustum = this.octree.search(frustum, cameraPosition);
 
+    // Sort nodes by distance for better LOD distribution
+    nodesInFrustum.sort((a, b) => {
+      const distA = cameraPosition.distanceTo(a.boundingBox.getCenter(new THREE.Vector3()));
+      const distB = cameraPosition.distanceTo(b.boundingBox.getCenter(new THREE.Vector3()));
+      return distA - distB;
+    });
+
+    // Limit the number of nodes to update per frame
+    const maxUpdatesPerFrame = 5;
+    let updatesThisFrame = 0;
+
     for (const nodeData of nodesInFrustum) {
+      if (updatesThisFrame >= maxUpdatesPerFrame) break;
+
       const spatialNode = this.nodes.find((n) => n.node === nodeData);
       if (!spatialNode) continue;
       if (now - spatialNode.lastUpdate < this.updateInterval) continue;
@@ -209,8 +222,8 @@ export class SpatialIndex {
       let pointsToShow = spatialNode.node.points.length;
 
       // Apply LOD reduction if screen space is small
-      if (screenArea < 5000) {
-        const reduction = Math.max(0.1, screenArea / 5000);
+      if (screenArea < 10000) { // Increased from 5000
+        const reduction = Math.max(0.1, screenArea / 10000);
         pointsToShow = Math.max(
           this.minPoints,
           Math.min(this.maxPoints, Math.floor(spatialNode.node.points.length * reduction))
@@ -218,45 +231,44 @@ export class SpatialIndex {
       }
 
       // Skip if the change is too small to matter
-      if (Math.abs(pointsToShow - spatialNode.pointsToShow) < spatialNode.pointsToShow * 0.1) continue;
+      if (Math.abs(pointsToShow - spatialNode.pointsToShow) < spatialNode.pointsToShow * 0.2) continue;
 
       spatialNode.pointsToShow = pointsToShow;
       spatialNode.lastUpdate = now;
       nodesToUpdate.push(spatialNode);
+      updatesThisFrame++;
     }
 
     return nodesToUpdate;
   }
 
-  // Project bounding box to screen and estimate how much space it occupies
-  private estimateScreenArea(box: THREE.Box3, camera: THREE.PerspectiveCamera): number {
-    const vertices = [
+  // Optimize screen area estimation
+  private estimateScreenArea(box: THREE.Box3, camera: THREE.Camera): number {
+    const corners = [
       new THREE.Vector3(box.min.x, box.min.y, box.min.z),
-      new THREE.Vector3(box.min.x, box.min.y, box.max.z),
-      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
-      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
       new THREE.Vector3(box.max.x, box.min.y, box.min.z),
-      new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
       new THREE.Vector3(box.max.x, box.max.y, box.min.z),
-      new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.max.z)
     ];
 
-    const screenCoords = vertices.map((v) => {
-      const projected = v.clone().project(camera);
-      return new THREE.Vector2(projected.x, projected.y);
-    });
+    let minX = Infinity, minY = Infinity;
+    let maxX = -Infinity, maxY = -Infinity;
 
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of screenCoords) {
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
+    for (const corner of corners) {
+      const projected = corner.clone().project(camera);
+      minX = Math.min(minX, projected.x);
+      minY = Math.min(minY, projected.y);
+      maxX = Math.max(maxX, projected.x);
+      maxY = Math.max(maxY, projected.y);
     }
 
     const width = maxX - minX;
     const height = maxY - minY;
-    return width * height * window.innerWidth * window.innerHeight;
+    return width * height * 1000000; // Scale factor for better LOD distribution
   }
 
   public getNodes(): SpatialNode[] {
