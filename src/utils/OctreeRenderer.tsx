@@ -109,9 +109,10 @@ export default function OctreeRenderer({
           geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
 
           const mat = new THREE.PointsMaterial({
-            size: pointSize,
+            size: pointSize * 0.2,
             vertexColors: true,
-            sizeAttenuation: true
+            sizeAttenuation: true,
+            alphaTest: 0.5
           });
           
           const pointsObj = new THREE.Points(geometry, mat);
@@ -239,9 +240,10 @@ export default function OctreeRenderer({
           geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
 
           const mat = new THREE.PointsMaterial({
-            size: pointSize,
+            size: pointSize * 0.2,
             vertexColors: true,
-            sizeAttenuation: true
+            sizeAttenuation: true,
+            alphaTest: 0.5
           });
           
           const pointsObj = new THREE.Points(geometry, mat);
